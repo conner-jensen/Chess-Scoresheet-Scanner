@@ -18,8 +18,8 @@ def preprocess_image(img_path) -> np.ndarray:
 
 
 def _order_points(pts: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-    '''Rearrange coordinates to order:
-      top-left, top-right, bottom-right, bottom-left'''
+    # Rearrange coordinates to order: top-left, top-right, bottom-right, bottom-left
+	
     rect = np.zeros((4, 2), dtype='float32')
     pts = np.array(pts)
     s = pts.sum(axis=1)
@@ -52,33 +52,32 @@ def _find_dest(pts: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
  
     return _order_points(destination_corners)
 
-'''
-def pad(corners, padding):
-	x1, y1 = corners[0]
-	x2, y2 = corners[1]
-	x3, y3 = corners[2]
-	x4, y4 = corners[3]
+# def pad(corners, padding):
+# 	x1, y1 = corners[0]
+# 	x2, y2 = corners[1]
+# 	x3, y3 = corners[2]
+# 	x4, y4 = corners[3]
 
-	xc, yc = ((x1+x2+x3+x4)/4, (y1+y2+y3+y4)/4) # centroid
+# 	xc, yc = ((x1+x2+x3+x4)/4, (y1+y2+y3+y4)/4) # centroid
 
-	cp1 = ((x1-xc)*padding, (y1-yc)*padding)
-	cp2 = ((x2-xc)*padding, (y2-yc)*padding)
-	cp3 = ((x3-xc)*padding, (y3-yc)*padding)
-	cp4 = ((x4-xc)*padding, (y4-yc)*padding)
+# 	cp1 = ((x1-xc)*padding, (y1-yc)*padding)
+# 	cp2 = ((x2-xc)*padding, (y2-yc)*padding)
+# 	cp3 = ((x3-xc)*padding, (y3-yc)*padding)
+# 	cp4 = ((x4-xc)*padding, (y4-yc)*padding)
 
-	x1 = xc + cp1[0]
-	y1 = yc + cp1[1]
-	x2 = xc + cp2[0]
-	y2 = yc + cp2[1]
-	x3 = xc + cp3[0]
-	y3 = yc + cp3[1]
-	x4 = xc + cp4[0]
-	y4 = yc + cp4[1]
+# 	x1 = xc + cp1[0]
+# 	y1 = yc + cp1[1]
+# 	x2 = xc + cp2[0]
+# 	y2 = yc + cp2[1]
+# 	x3 = xc + cp3[0]
+# 	y3 = yc + cp3[1]
+# 	x4 = xc + cp4[0]
+# 	y4 = yc + cp4[1]
 
-	new_corners = [[x1,y1], [x2, y2], [x3,y3], [x4,y4]]
+# 	new_corners = [[x1,y1], [x2, y2], [x3,y3], [x4,y4]]
 
-	return new_corners
-'''
+# 	return new_corners
+
 # expands corners horizontally to account for the small width between ArUco markers and the scoresheet's edges
 def _pad(corners: List[Tuple[int, int]], padding) -> List[Tuple[int, int]]:
 	x1, y1 = corners[0]
@@ -174,10 +173,11 @@ def _binarize(img: np.ndarray) -> np.ndarray:
 
 	# standard practice is white foreground / black background
 	binarized_img = 255 - binarized_img
-	cv2.imwrite('binary-aligned.png', binarized_img)
+	# cv2.imwrite('binary-aligned.png', binarized_img)
 
 	return binarized_img
 
+# Credit: https://stackoverflow.com/questions/42798659/how-to-remove-small-connected-objects-using-opencv
 def _denoise(img: np.ndarray) -> np.ndarray:
 	# Start by finding all of the connected components (white blobs in your image).
 	# 'im' needs to be grayscale and 8bit.
