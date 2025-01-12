@@ -129,7 +129,8 @@ class OCRModel:
             char_ROIs.append(cropped_contour)
         
         return char_ROIs
-    
+
+    # Credit: https://stackoverflow.com/questions/66711654/converting-image-into-mnist-format
     def _format_to_mnist(self, img: np.ndarray) -> np.ndarray:
 
         img = cv2.GaussianBlur(img,(5,5),1)
