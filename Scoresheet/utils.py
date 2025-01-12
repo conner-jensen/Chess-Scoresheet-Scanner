@@ -1,7 +1,8 @@
 
 import cv2
+import numpy as np
 
-def resize(img, new_w, new_h):
+def resize(img: np.ndarray, new_w, new_h) -> np.ndarray:
 	if len(img.shape) == 3:
 		h, w, _ = img.shape
 	else:

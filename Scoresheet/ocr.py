@@ -4,22 +4,26 @@ import tensorflow as tf
 
 import itertools
 
+from typing import List, Tuple
+
 class OCRModel:
-    def __init__(self, weights_path):
+    def __init__(self, model_path):
         """Initialize the OCR model with the given weights."""
         
-        self.model = tf.keras.Sequential([
-            tf.keras.Input((28, 28, 1)),
-            tf.keras.layers.Conv2D(32,3),
-            tf.keras.layers.MaxPooling2D(2,2),
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(512,activation='relu'),
-            tf.keras.layers.Dense(128,activation='relu'),
-            tf.keras.layers.Dense(47,activation='softmax')
-        ])
+        # self.model = tf.keras.Sequential([
+        #     tf.keras.Input((28, 28, 1)),
+        #     tf.keras.layers.Conv2D(32,3),
+        #     tf.keras.layers.MaxPooling2D(2,2),
+        #     tf.keras.layers.Flatten(),
+        #     tf.keras.layers.Dense(512,activation='relu'),
+        #     tf.keras.layers.Dense(128,activation='relu'),
+        #     tf.keras.layers.Dense(47,activation='softmax')
+        # ])
 
 
-        self.model.load_weights(weights_path)
+        # self.model.load_weights(weights_path)
+
+        self.model = tf.keras.models.load_model(model_path, compile=False)
 
         self.index_to_char = {0: '0', 1: '1', 2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 
                          10: 'A', 11: 'B', 12: 'C', 13: 'D', 14: 'E', 15: 'F', 16: 'G', 17: 'H', 18: 'I',
@@ -31,14 +35,14 @@ class OCRModel:
         self.valid_chars = [0, 1, 2, 3, 4, 5, 6, 7, 8, 11, 12, 20, 23, 24, 26, 27, 33, 36, 37, 38, 39, 40, 41, 42, 46] # 46 (t) to recognize +
         self.valid_to_true_char = {'0':'O', 'C':'c', '9':'g', 'X':'x', 't':'+'}
 
-    # returns top n predictions in a tuple
-    def perform_ocr(self, move_box, n=3):
+    # Returns top n predictions in a tuple
+    def perform_ocr(self, move_box: np.ndarray, n=3) -> Tuple[Tuple[float, str], ...]:
         char_boxes = self._find_chars(move_box)
 
         if len(char_boxes) == 0:
             return tuple()
 
-        # gaussian blur -> inter-cubic rescale to 28x28 with padding -> convert to (1, 28, 28, 1) tensor
+        # Gaussian blur -> inter-cubic rescale to 28x28 with padding -> convert to (1, 28, 28, 1) tensor
         char_boxes = [self._format_to_mnist(box) for box in char_boxes]
 
         potential_char_matrix = []
@@ -48,11 +52,11 @@ class OCRModel:
             model_outputs = list(self.model(box).numpy())[0]
             #print(model_outputs)
             #print()
-            # list in the following format: (probability, character), ie (0.94, 'K')
+            # List in the following format: (probability, character), ie (0.94, 'K')
             potential_chars = []
             for i, probability in enumerate(model_outputs):
 
-                # exlude non-valid characters
+                # Exlude non-valid characters
                 if i not in self.valid_chars:
                     continue
 
@@ -62,18 +66,18 @@ class OCRModel:
 
                 potential_chars.append((probability, character))
 
-            # sort by probability
+            # Sort by probability
             potential_chars.sort(reverse=True)
 
-            # truncate to only first 5, to keep computations manageable
+            # Truncate to only first 5, to keep computations manageable
             potential_chars = potential_chars[:10]
 
             potential_char_matrix.append(potential_chars)
 
-        # cartesian product across axis 0 of the matrix
+        # Cartesian product across axis 0 of the matrix
         potential_moves = list(itertools.product(*potential_char_matrix))
         temp = []
-        # char_tuple example: ((1.0, 'Q'), (0.99066085, 'f'), (0.99999964, '3'), (1.0, '+'))
+        # Char_tuple example: ((1.0, 'Q'), (0.99066085, 'f'), (0.99999964, '3'), (1.0, '+'))
         for char_tuple in potential_moves:
             total_probability = 1
             move = ""
@@ -82,7 +86,7 @@ class OCRModel:
                 move += character
             temp.append((total_probability, move))
         
-        # temporary fix for mis-identifying 'e' as 'Q'
+        # Temporary fix for mis-identifying 'e' as 'Q'
         for probability, move in temp:
             if 'Q' in move:
                 temp.append((probability-0.01, move.replace('Q', 'e')))
@@ -94,11 +98,11 @@ class OCRModel:
         
         return tuple(potential_moves[:n])
     
-    def _find_chars(self, move_box):
+    def _find_chars(self, move_box: np.ndarray) -> List[np.ndarray]:
         # Find the contours (RETR_EXTERNAL makes sure we only return the outermost contours)
         contours, _ = cv2.findContours(move_box, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # sort by x
+        # Sort by x
         contours = sorted(contours, key=lambda x:cv2.boundingRect(x)[0])
 
         char_ROIs = []
@@ -117,7 +121,6 @@ class OCRModel:
             x, y, w, h = cv2.boundingRect(contour)
             
             # Filter out border pixels / noise
-
             if w*h <= 200 or (24 * min(w, h)) // max(w, h) == 0:
                 continue
 
@@ -127,7 +130,7 @@ class OCRModel:
         
         return char_ROIs
     
-    def _format_to_mnist(self, img):
+    def _format_to_mnist(self, img: np.ndarray) -> np.ndarray:
 
         img = cv2.GaussianBlur(img,(5,5),1)
 
@@ -156,20 +159,13 @@ class OCRModel:
 
         out_img[x_min:x_max, y_min:y_max] = tmp_img
 
-        # normalize
+        # Normalize
         out_img = out_img / 255.
 
-        # training images are vertically flipped and 90 degrees clockwise, so we replicate this here
+        # Training images are vertically flipped and 90 degrees clockwise, so we replicate this here
         out_img = np.rot90(out_img,1,(0,1))
         out_img = np.flip(out_img, axis=0)
 
         out_img = out_img.reshape(1, 28, 28, 1)
 
         return out_img
-    
-
-
-
-
-# start: piece OR file
-# piece -> 

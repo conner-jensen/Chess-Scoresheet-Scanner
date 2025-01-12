@@ -2,10 +2,13 @@
 import cv2
 import numpy as np
 
-def extract_move_boxes(img):
+from typing import List, Tuple
+
+def extract_move_boxes(img: np.ndarray) -> List[np.ndarray]:
     # (roi, x, y)
     boxes_and_coords = _find_boxes(img)
-    cv2.imwrite('box.png', boxes_and_coords[78][0])
+    assert len(boxes_and_coords) == 80
+    #cv2.imwrite('box.png', boxes_and_coords[78][0])
 
     boxes_and_coords = _sort_boxes(boxes_and_coords)
     i = 0
@@ -21,11 +24,11 @@ def extract_move_boxes(img):
         2)
         i += 1
 
-        cv2.imwrite("denoised.png", img)
+        # cv2.imwrite("denoised.png", img)
 
     move_boxes = [x[0] for x in boxes_and_coords]
 
-    cv2.imwrite('box.png', move_boxes[0])
+    # cv2.imwrite('box.png', move_boxes[0])
 
     move_boxes = [_remove_borders(box) for box in move_boxes]
 
@@ -74,12 +77,11 @@ def _find_boxes(img):
         
     return move_boxes
 '''
-def _find_boxes(img):
+def _find_boxes(img: np.ndarray) -> List[Tuple[np.ndarray, int, int]]:
     # invert image because move boxes are negative space
     inverted_img = 255 - img
 
     move_boxes = []
-    i = 0
 
     contours, _ = cv2.findContours(inverted_img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
 
@@ -96,7 +98,7 @@ def _find_boxes(img):
         # Find the bounding box of the contour to crop the region
         x, y, w, h = cv2.boundingRect(contour)
         
-        if 2.5 < w/h < 4.5 and 54000 < w*h < 63000:
+        if 2.5 < w/h < 4.5 and 50000 < w*h < 67000:
 
             roi = contour_region[y:y+h, x:x+w]
 
@@ -109,7 +111,7 @@ def _find_boxes(img):
         
 
 # sort boxes into move-order
-def _sort_boxes(move_boxes):
+def _sort_boxes(move_boxes: List[Tuple[np.ndarray, int, int]]) -> List[Tuple[np.ndarray, int, int]]:
 
     # sort by x, which puts each set of 20 vertical columns in place
     move_boxes.sort(key=lambda x: x[1])
@@ -148,7 +150,7 @@ def _find_ROIs(img, move_boxes):
     return rois
 '''
 
-def _remove_borders(move_box):
+def _remove_borders(move_box: np.ndarray) -> np.ndarray:
     y, x = move_box.shape
 
     for i in range(x):

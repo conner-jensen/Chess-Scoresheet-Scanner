@@ -2,21 +2,22 @@ import cv2
 import numpy as np
 
 from utils import resize
+from typing import List, Tuple
 
-def preprocess_image(img_path):
+def preprocess_image(img_path) -> np.ndarray:
 	img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
 	img = _scan(img)
 	img = resize(img, 2048, 3736)
-	cv2.imwrite('aligned.png', img)
+	# cv2.imwrite('aligned.png', img)
 	img = _binarize(img)
-	cv2.imwrite('binary-aligned.png', img)
+	# cv2.imwrite('binary-aligned.png', img)
 	img = _denoise(img)
-	cv2.imwrite('denoised.png', img)
+	# cv2.imwrite('denoised.png', img)
 
 	return img
 
 
-def _order_points(pts):
+def _order_points(pts: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     '''Rearrange coordinates to order:
       top-left, top-right, bottom-right, bottom-left'''
     rect = np.zeros((4, 2), dtype='float32')
@@ -35,7 +36,7 @@ def _order_points(pts):
     # return the ordered coordinates
     return rect.astype('int').tolist()
 
-def _find_dest(pts):
+def _find_dest(pts: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     (tl, tr, br, bl) = pts
     # Finding the maximum width.
     widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))
@@ -79,7 +80,7 @@ def pad(corners, padding):
 	return new_corners
 '''
 # expands corners horizontally to account for the small width between ArUco markers and the scoresheet's edges
-def _pad(corners, padding):
+def _pad(corners: List[Tuple[int, int]], padding) -> List[Tuple[int, int]]:
 	x1, y1 = corners[0]
 	x2, y2 = corners[1]
 	x3, y3 = corners[2]
@@ -103,11 +104,11 @@ def _pad(corners, padding):
 	x4 -= dx_43
 	y4 -= dy_43
 
-	new_corners = [[x1,y1], [x2, y2], [x3,y3], [x4,y4]]
+	new_corners = [(x1,y1), (x2, y2), (x3,y3), (x4,y4)]
 
 	return new_corners
 
-def _scan(img):
+def _scan(img: np.ndarray) -> np.ndarray:
 
 	# Create a copy of resized original image for later use
 	resized_img = img.copy()
@@ -167,7 +168,7 @@ def _scan(img):
 
 	return final
 
-def _binarize(img):
+def _binarize(img: np.ndarray) -> np.ndarray:
 	# do adaptive threshold on gray image
 	binarized_img = cv2.adaptiveThreshold(img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 199, 15)
 
@@ -177,7 +178,7 @@ def _binarize(img):
 
 	return binarized_img
 
-def _denoise(img):
+def _denoise(img: np.ndarray) -> np.ndarray:
 	# Start by finding all of the connected components (white blobs in your image).
 	# 'im' needs to be grayscale and 8bit.
 	#img_uint8 = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
